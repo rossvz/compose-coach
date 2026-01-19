@@ -4,7 +4,7 @@ import type { ReviewItem } from '../lib/types'
 export default function ReviewSidebar({
   reviews,
   selectedId,
-  onSelect,
+  onSelectReview,
   onNewReview,
   userEmail,
   onSignOut,
@@ -12,14 +12,17 @@ export default function ReviewSidebar({
 }: {
   reviews: ReviewItem[]
   selectedId: string | null
-  onSelect: (id: string) => void
+  onSelectReview: (reviewId: string) => void
   onNewReview: () => void
   userEmail?: string | null
   onSignOut?: () => void
   onDropFile: (file: File) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
-  const selectedReview = reviews.find((review) => review.id === selectedId) ?? reviews[0]
+  const selectedReview =
+    reviews.find((review) => review.reviewId === selectedId) ??
+    reviews.find((review) => review.id === selectedId) ??
+    reviews[0]
 
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
@@ -72,33 +75,37 @@ export default function ReviewSidebar({
         {reviews.length === 0 && (
           <div className="review-meta">No reviews yet.</div>
         )}
-        {reviews.map((review) => (
-          <button
-            key={review.id}
-            className={`review-card${review.id === selectedReview?.id ? ' active' : ''}`}
-            onClick={() => onSelect(review.id)}
-            type="button"
-          >
-            <div className="review-thumb">
-              {review.previewUrl ? (
-                <img src={review.previewUrl} alt={review.title} />
-              ) : (
-                'Preview'
-              )}
-            </div>
-            <div>
-              <div className="review-title">{review.title}</div>
-              <div className="review-meta">{review.createdAt}</div>
-              <div className="review-meta">
-                {review.status === 'loading'
-                  ? 'Analyzing...'
-                  : review.status === 'error'
-                    ? 'Needs retry'
-                    : 'Ready'}
+        {reviews.map((review) => {
+          const reviewKey = review.reviewId ?? review.id
+          const isActive = reviewKey === selectedId
+          return (
+            <button
+              key={review.id}
+              className={`review-card${isActive ? ' active' : ''}`}
+              onClick={() => onSelectReview(reviewKey)}
+              type="button"
+            >
+              <div className="review-thumb">
+                {review.previewUrl ? (
+                  <img src={review.previewUrl} alt={review.title} />
+                ) : (
+                  'Preview'
+                )}
               </div>
-            </div>
-          </button>
-        ))}
+              <div>
+                <div className="review-title">{review.title}</div>
+                <div className="review-meta">{review.createdAt}</div>
+                <div className="review-meta">
+                  {review.status === 'loading'
+                    ? 'Analyzing...'
+                    : review.status === 'error'
+                      ? 'Needs retry'
+                      : 'Ready'}
+                </div>
+              </div>
+            </button>
+          )
+        })}
       </div>
     </aside>
   )

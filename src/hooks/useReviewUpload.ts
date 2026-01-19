@@ -18,7 +18,10 @@ export function useReviewUpload(userId?: string) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedReview = useMemo(
-    () => reviews.find((review) => review.id === selectedId) ?? reviews[0] ?? null,
+    () =>
+      reviews.find(
+        (review) => review.reviewId === selectedId || review.id === selectedId,
+      ) ?? reviews[0] ?? null,
     [reviews, selectedId],
   )
 
@@ -235,6 +238,7 @@ export function useReviewUpload(userId?: string) {
             : review,
         ),
       )
+      setSelectedId(reviewRow.id)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
       setReviews((prev) =>

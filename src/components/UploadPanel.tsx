@@ -8,12 +8,14 @@ export default function UploadPanel({
   onFileChange,
   error,
   acceptTypes,
+  isLoading,
 }: {
   selectedReview: ReviewItem | null
   onPickFile: () => void
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   error: string | null
   acceptTypes: string
+  isLoading: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -49,11 +51,21 @@ export default function UploadPanel({
         </>
       ) : (
         <>
-          <div className="status-pill">Step 1 · Upload a recent photo</div>
-          <input type="file" accept={acceptTypes} onChange={onFileChange} />
-          <p className="review-meta">
-            JPG/PNG/GIF/WEBP · max 8MB · one review per upload.
-          </p>
+          {isLoading ? (
+            <div className="loading-panel">
+              <div className="spinner" aria-hidden="true" />
+              <div className="status-pill">Loading your review...</div>
+              <p className="review-meta">Fetching your saved reviews.</p>
+            </div>
+          ) : (
+            <>
+              <div className="status-pill">Step 1 · Upload a recent photo</div>
+              <input type="file" accept={acceptTypes} onChange={onFileChange} />
+              <p className="review-meta">
+                JPG/PNG/GIF/WEBP · max 8MB · one review per upload.
+              </p>
+            </>
+          )}
         </>
       )}
       {error && <div className="error">{error}</div>}
