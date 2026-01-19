@@ -66,14 +66,24 @@
 }
 
 .drop-zone {
-  border: 2px dashed rgba(30, 27, 22, 0.2);
+  border: 3px dashed rgba(32, 68, 62, 0.7);
   border-radius: 16px;
-  padding: 18px;
+  padding: 28px 18px;
   display: grid;
   gap: 6px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    inset 0 0 0 1px rgba(47, 95, 85, 0.12),
+    0 4px 14px rgba(30, 27, 22, 0.08);
   transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.drop-zone-button {
+  appearance: none;
+  border: 3px dashed rgba(32, 68, 62, 0.7);
+  cursor: pointer;
+  color: inherit;
 }
 
 .drop-zone.dragging {
@@ -83,6 +93,20 @@
 
 .drop-zone-title {
   font-weight: 600;
+  font-size: 14px;
+}
+
+.drop-zone-icon {
+  width: 34px;
+  height: 34px;
+  margin: 0 auto 2px;
+  color: var(--accent);
+}
+
+.drop-zone-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .user-block {
