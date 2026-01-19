@@ -23,6 +23,7 @@ function App() {
     setSelectedId,
     handlePickFile,
     handleFileChange,
+    handleDropFile,
   } = useReviewUpload(user?.id)
 
   const handleSignOut = async () => {
@@ -49,6 +50,7 @@ function App() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         onNewReview={handlePickFile}
+        onDropFile={handleDropFile}
         userEmail={user.email}
         onSignOut={handleSignOut}
       />

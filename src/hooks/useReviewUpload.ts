@@ -107,27 +107,19 @@ export function useReviewUpload(userId?: string) {
     fileInputRef.current?.click()
   }
 
-  const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
+  const processFile = async (file: File) => {
     if (!userId) {
       setError('Sign in to upload photos.')
-      event.target.value = ''
       return
     }
 
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       setError('Please upload a JPG, PNG, GIF, or WEBP image.')
-      event.target.value = ''
       return
     }
 
     if (file.size > 8 * 1024 * 1024) {
       setError('Please upload an image under 8MB.')
-      event.target.value = ''
       return
     }
 
@@ -135,7 +127,6 @@ export function useReviewUpload(userId?: string) {
     const [meta, base64] = dataUrl.split(',')
     if (!base64) {
       setError('Could not read image data.')
-      event.target.value = ''
       return
     }
     const mimeType = meta?.match(/data:(.*);base64/)?.[1] ?? file.type
@@ -256,9 +247,21 @@ export function useReviewUpload(userId?: string) {
         ),
       )
       setError(message)
-    } finally {
-      event.target.value = ''
     }
+  }
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    await processFile(file)
+    event.target.value = ''
+  }
+
+  const handleDropFile = async (file: File) => {
+    await processFile(file)
   }
 
   return {
@@ -271,5 +274,6 @@ export function useReviewUpload(userId?: string) {
     setSelectedId,
     handlePickFile,
     handleFileChange,
+    handleDropFile,
   }
 }

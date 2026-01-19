@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ReviewItem } from '../lib/types'
 
 export default function ReviewSidebar({
@@ -7,6 +8,7 @@ export default function ReviewSidebar({
   onNewReview,
   userEmail,
   onSignOut,
+  onDropFile,
 }: {
   reviews: ReviewItem[]
   selectedId: string | null
@@ -14,8 +16,28 @@ export default function ReviewSidebar({
   onNewReview: () => void
   userEmail?: string | null
   onSignOut?: () => void
+  onDropFile: (file: File) => void
 }) {
+  const [isDragging, setIsDragging] = useState(false)
   const selectedReview = reviews.find((review) => review.id === selectedId) ?? reviews[0]
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragging(false)
+  }
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDragging(false)
+    const file = event.dataTransfer.files?.[0]
+    if (file) {
+      onDropFile(file)
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -26,6 +48,15 @@ export default function ReviewSidebar({
       <button className="new-review" onClick={onNewReview}>
         New review
       </button>
+      <div
+        className={`drop-zone${isDragging ? ' dragging' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div className="drop-zone-title">Drop a photo here</div>
+        <div className="review-meta">JPG, PNG, GIF, or WEBP</div>
+      </div>
       {userEmail && (
         <div className="user-block">
           <div className="review-meta">Signed in as</div>
