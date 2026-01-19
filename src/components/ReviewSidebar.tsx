@@ -107,8 +107,11 @@ export default function ReviewSidebar({
               type="button"
             >
               <div className="review-thumb">
-                {review.previewUrl ? (
-                  <img src={review.previewUrl} alt={review.title} />
+                {review.thumbnailUrl || review.previewUrl ? (
+                  <img
+                    src={review.thumbnailUrl ?? review.previewUrl}
+                    alt={review.title}
+                  />
                 ) : (
                   'Preview'
                 )}

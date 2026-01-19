@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReviewItem } from '../lib/types'
 import { extractExifSummary } from '../lib/exif'
 import { blobToBase64, fileToDataUrl } from '../lib/file'
-import { getImageDimensions } from '../lib/image'
+import { createThumbnail, getImageDimensions } from '../lib/image'
 import { reviewPhoto } from '../server/reviewPhoto'
 import { getSupabase } from '../lib/supabaseClient'
 
@@ -46,7 +46,7 @@ export function useReviewUpload(
       const { data, error: fetchError } = await supabase
         .from('reviews')
         .select(
-          'id, created_at, review_text, ai_title, model, photo:photos(id, storage_path, original_name, mime_type, exif, created_at)',
+          'id, created_at, review_text, ai_title, model, photo:photos(id, storage_path, thumbnail_path, thumbnail_mime_type, original_name, mime_type, exif, created_at)',
         )
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -67,6 +67,8 @@ export function useReviewUpload(
         const photo = row.photo as {
           id: string
           storage_path: string
+          thumbnail_path: string | null
+          thumbnail_mime_type: string | null
           original_name: string | null
           mime_type: string | null
           exif: Record<string, unknown> | null
@@ -74,6 +76,16 @@ export function useReviewUpload(
         } | null
 
         let previewUrl = ''
+        let thumbnailUrl = ''
+        if (photo?.thumbnail_path) {
+          const { data: signedThumb, error: thumbError } = await supabase.storage
+            .from('photos')
+            .createSignedUrl(photo.thumbnail_path, SIGNED_URL_TTL)
+          if (thumbError) {
+            console.warn('Failed to sign thumbnail URL', thumbError)
+          }
+          thumbnailUrl = signedThumb?.signedUrl ?? ''
+        }
         if (photo?.storage_path) {
           const { data: signed, error: signedError } = await supabase.storage
             .from('photos')
@@ -89,6 +101,7 @@ export function useReviewUpload(
           title: row.ai_title || photo?.original_name || 'Uploaded photo',
           createdAt: new Date(row.created_at).toLocaleString(),
           previewUrl,
+          thumbnailUrl,
           exif: (photo?.exif as ReviewItem['exif']) ?? undefined,
           mimeType: photo?.mime_type ?? undefined,
           feedback: row.review_text,
@@ -141,6 +154,15 @@ export function useReviewUpload(
     const mimeType = meta?.match(/data:(.*);base64/)?.[1] ?? file.type
     const exif = await extractExifSummary(file)
     const { width, height } = await getImageDimensions(file)
+    let thumbnail: { blob: Blob; type: string } | null = null
+    let thumbnailObjectUrl: string | undefined
+    try {
+      const created = await createThumbnail(file)
+      thumbnail = { blob: created.blob, type: created.type }
+      thumbnailObjectUrl = URL.createObjectURL(created.blob)
+    } catch (thumbError) {
+      console.warn('Thumbnail generation failed', thumbError)
+    }
 
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -152,6 +174,7 @@ export function useReviewUpload(
       title: file.name || 'Untitled upload',
       createdAt: new Date().toLocaleString(),
       previewUrl: dataUrl,
+      thumbnailUrl: thumbnailObjectUrl,
       exif,
       mimeType,
       feedback: '',
@@ -175,12 +198,26 @@ export function useReviewUpload(
         throw uploadError
       }
 
+      let thumbnailPath: string | null = null
+      if (thumbnail) {
+        thumbnailPath = `${userId}/thumb-${id}.jpg`
+        const { error: thumbUploadError } = await supabase.storage
+          .from('photos')
+          .upload(thumbnailPath, thumbnail.blob, { contentType: thumbnail.type })
+
+        if (thumbUploadError) {
+          throw thumbUploadError
+        }
+      }
+
       const { data: photoRow, error: photoError } = await supabase
         .from('photos')
         .insert({
           user_id: userId,
           storage_bucket: 'photos',
           storage_path: storagePath,
+          thumbnail_path: thumbnailPath,
+          thumbnail_mime_type: thumbnail?.type ?? null,
           mime_type: file.type,
           original_name: file.name,
           file_size: file.size,
@@ -252,6 +289,9 @@ export function useReviewUpload(
       const { data: signed } = await supabase.storage
         .from('photos')
         .createSignedUrl(storagePath, SIGNED_URL_TTL)
+      const { data: signedThumb } = thumbnailPath
+        ? await supabase.storage.from('photos').createSignedUrl(thumbnailPath, SIGNED_URL_TTL)
+        : { data: null }
 
       setReviews((prev) =>
         prev.map((review) =>
@@ -265,6 +305,7 @@ export function useReviewUpload(
                 reviewId: reviewRow.id,
                 storagePath,
                 previewUrl: signed?.signedUrl ?? review.previewUrl,
+                thumbnailUrl: signedThumb?.signedUrl ?? review.thumbnailUrl,
               }
             : review,
         ),
