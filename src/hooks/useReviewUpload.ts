@@ -4,7 +4,7 @@ import { extractExifSummary } from '../lib/exif'
 import { blobToBase64, fileToDataUrl } from '../lib/file'
 import { getImageDimensions } from '../lib/image'
 import { reviewPhoto } from '../server/reviewPhoto'
-import { supabase } from '../lib/supabaseClient'
+import { getSupabase } from '../lib/supabaseClient'
 
 const REVIEWS_LIMIT = 20
 const SIGNED_URL_TTL = 60 * 60
@@ -39,6 +39,7 @@ export function useReviewUpload(userId?: string) {
     const loadExisting = async () => {
       setLoadingExisting(true)
       setError(null)
+      const supabase = getSupabase()
       const { data, error: fetchError } = await supabase
         .from('reviews')
         .select(
@@ -162,6 +163,7 @@ export function useReviewUpload(userId?: string) {
       const safeName = (file.name || 'photo').replace(/[^\w.-]+/g, '-')
       const storagePath = `${userId}/${id}-${safeName}`
 
+      const supabase = getSupabase()
       const { error: uploadError } = await supabase.storage
         .from('photos')
         .upload(storagePath, file, { contentType: file.type })
@@ -292,6 +294,7 @@ export function useReviewUpload(userId?: string) {
     )
 
     try {
+      const supabase = getSupabase()
       const { data: signed, error: signedError } = await supabase.storage
         .from('photos')
         .createSignedUrl(review.storagePath, SIGNED_URL_TTL)

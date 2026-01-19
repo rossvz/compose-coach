@@ -7,7 +7,7 @@ import ReviewPanel from './ReviewPanel'
 import AuthPanel from './AuthPanel'
 import { useReviewUpload } from '../hooks/useReviewUpload'
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
-import { supabase } from '../lib/supabaseClient'
+import { getSupabase } from '../lib/supabaseClient'
 
 export default function ReviewPage({ reviewId }: { reviewId?: string }) {
   const acceptTypes = 'image/jpeg,image/png,image/gif,image/webp'
@@ -41,6 +41,7 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
   }, [reviewId, selectedReview?.reviewId, navigate])
 
   const handleSignOut = async () => {
+    const supabase = getSupabase()
     await supabase.auth.signOut()
   }
 

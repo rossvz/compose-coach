@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabaseClient'
+import { getSupabase } from '../lib/supabaseClient'
 
 export function useSupabaseAuth() {
   const [session, setSession] = useState<Session | null>(null)
@@ -11,6 +11,7 @@ export function useSupabaseAuth() {
     let active = true
 
     const init = async () => {
+      const supabase = getSupabase()
       const { data, error } = await supabase.auth.getSession()
       if (!active) return
       if (error) {
@@ -23,6 +24,7 @@ export function useSupabaseAuth() {
 
     init()
 
+    const supabase = getSupabase()
     const { data: subscription } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
         setSession(nextSession)

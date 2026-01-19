@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { getSupabase } from '../lib/supabaseClient'
 
 export default function AuthPanel() {
   const [mode, setMode] = useState<'sign-in' | 'sign-up'>('sign-in')
@@ -16,6 +16,7 @@ export default function AuthPanel() {
     setMessage(null)
 
     try {
+      const supabase = getSupabase()
       if (mode === 'sign-in') {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
