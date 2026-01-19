@@ -1,0 +1,35 @@
+service: compose_coach
+
+image: rossvz/compose_coach
+
+servers:
+  web:
+    - 147.93.47.41
+
+proxy:
+  ssl: true
+  host: compose-coach.rosscodes.com
+  app_port: 5000
+
+registry:
+  username: rossvz
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  secret:
+    - OPENAI_API_KEY
+    - VITE_SUPABASE_URL
+    - VITE_SUPABASE_ANON_KEY
+  clear:
+    PORT: 5000
+
+builder:
+  arch: amd64
+
+ssh:
+  user: rossvz
+
+aliases:
+  logs: app logs -f
+  shell: app exec --interactive --reuse "bash"
