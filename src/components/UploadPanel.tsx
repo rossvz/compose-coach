@@ -62,7 +62,7 @@ export default function UploadPanel({
               <div className="status-pill">Step 1 · Upload a recent photo</div>
               <input type="file" accept={acceptTypes} onChange={onFileChange} />
               <p className="review-meta">
-                JPG/PNG/GIF/WEBP · max 8MB · one review per upload.
+                JPG/PNG/GIF/WEBP · max 8MB · stored for 30 days.
               </p>
             </>
           )}
