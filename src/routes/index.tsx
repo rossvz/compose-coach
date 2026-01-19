@@ -173,6 +173,7 @@ type ReviewItem = {
   title: string
   createdAt: string
   previewUrl: string
+  exif?: ReviewRequest['exif']
   feedback: string
   status: 'ready' | 'loading' | 'error'
   error?: string
@@ -225,6 +226,7 @@ function App() {
       title: file.name || 'Untitled upload',
       createdAt: new Date().toLocaleString(),
       previewUrl: dataUrl,
+      exif,
       feedback: '',
       status: 'loading',
     }
@@ -335,11 +337,29 @@ function App() {
         </div>
 
         <section className="upload-panel">
-          <div className="status-pill">Step 1 · Upload a recent photo</div>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-          <p className="review-meta">
-            JPEG/PNG/HEIC recommended · max 8MB · one review per upload.
-          </p>
+          {selectedReview?.previewUrl ? (
+            <>
+              <div className="status-pill">Current photo</div>
+              <div className="photo-preview">
+                <img src={selectedReview.previewUrl} alt={selectedReview.title} />
+              </div>
+              <div className="exif-panel">
+                <h4>EXIF Details</h4>
+                <ExifList exif={selectedReview.exif} />
+              </div>
+              <button className="new-review" onClick={handlePickFile}>
+                Upload another
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="status-pill">Step 1 · Upload a recent photo</div>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+              <p className="review-meta">
+                JPEG/PNG/HEIC recommended · max 8MB · one review per upload.
+              </p>
+            </>
+          )}
           {error && <div className="error">{error}</div>}
         </section>
 
@@ -421,6 +441,50 @@ function StructuredReview({ review }: { review: string }) {
         <div className="score-value">{parsed.score ?? 'Not provided'}</div>
       </section>
     </div>
+  )
+}
+
+function ExifList({ exif }: { exif?: ReviewRequest['exif'] }) {
+  if (!exif) {
+    return <p className="review-meta">No EXIF metadata detected.</p>
+  }
+
+  const entries: Array<[string, string | number | undefined]> = [
+    ['Camera', [exif.cameraMake, exif.cameraModel].filter(Boolean).join(' ')],
+    ['Lens', exif.lensModel],
+    ['Focal Length', exif.focalLengthMm ? `${exif.focalLengthMm}mm` : undefined],
+    [
+      'Focal Length (35mm)',
+      exif.focalLength35mm ? `${exif.focalLength35mm}mm` : undefined,
+    ],
+    ['Aperture', exif.aperture ? `f/${exif.aperture}` : undefined],
+    ['Shutter', exif.shutterSpeed],
+    ['ISO', exif.iso],
+    [
+      'Exposure Comp',
+      exif.exposureCompensation !== undefined
+        ? `${exif.exposureCompensation}`
+        : undefined,
+    ],
+    ['White Balance', exif.whiteBalance],
+    ['Flash', exif.flash],
+    ['Taken At', exif.takenAt ? new Date(exif.takenAt).toLocaleString() : undefined],
+  ]
+
+  const filtered = entries.filter(([, value]) => value !== undefined && value !== '')
+  if (filtered.length === 0) {
+    return <p className="review-meta">No EXIF metadata detected.</p>
+  }
+
+  return (
+    <dl className="exif-list">
+      {filtered.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
