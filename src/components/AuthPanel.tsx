@@ -8,12 +8,14 @@ export default function AuthPanel() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [resetSent, setResetSent] = useState(false)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setLoading(true)
     setError(null)
     setMessage(null)
+    setResetSent(false)
 
     try {
       const supabase = getSupabase()
@@ -34,6 +36,30 @@ export default function AuthPanel() {
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Auth failed'
+      setError(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleReset = async () => {
+    if (!email) {
+      setError('Enter your email to reset your password.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+    try {
+      const supabase = getSupabase()
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (resetError) throw resetError
+      setResetSent(true)
+      setMessage('Password reset email sent. Check your inbox.')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Reset failed'
       setError(message)
     } finally {
       setLoading(false)
@@ -78,6 +104,16 @@ export default function AuthPanel() {
               : 'Create account'}
         </button>
       </form>
+      {mode === 'sign-in' && (
+        <button
+          type="button"
+          className="link-button"
+          onClick={handleReset}
+          disabled={loading}
+        >
+          {resetSent ? 'Reset email sent' : 'Forgot password?'}
+        </button>
+      )}
       {error && <div className="error">{error}</div>}
       {message && <div className="status-pill">{message}</div>}
       <button

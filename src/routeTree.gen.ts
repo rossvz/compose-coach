@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UpRouteImport } from './routes/up'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReviewsReviewIdRouteImport } from './routes/reviews/$reviewId'
@@ -17,6 +18,11 @@ import { Route as ReviewsReviewIdRouteImport } from './routes/reviews/$reviewId'
 const UpRoute = UpRouteImport.update({
   id: '/up',
   path: '/up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HealthRoute = HealthRouteImport.update({
@@ -38,12 +44,14 @@ const ReviewsReviewIdRoute = ReviewsReviewIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
@@ -51,20 +59,28 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/health' | '/up' | '/reviews/$reviewId'
+  fullPaths: '/' | '/health' | '/reset-password' | '/up' | '/reviews/$reviewId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/health' | '/up' | '/reviews/$reviewId'
-  id: '__root__' | '/' | '/health' | '/up' | '/reviews/$reviewId'
+  to: '/' | '/health' | '/reset-password' | '/up' | '/reviews/$reviewId'
+  id:
+    | '__root__'
+    | '/'
+    | '/health'
+    | '/reset-password'
+    | '/up'
+    | '/reviews/$reviewId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthRoute: typeof HealthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   UpRoute: typeof UpRoute
   ReviewsReviewIdRoute: typeof ReviewsReviewIdRoute
 }
@@ -76,6 +92,13 @@ declare module '@tanstack/react-router' {
       path: '/up'
       fullPath: '/up'
       preLoaderRoute: typeof UpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/health': {
@@ -105,6 +128,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthRoute: HealthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   UpRoute: UpRoute,
   ReviewsReviewIdRoute: ReviewsReviewIdRoute,
 }
