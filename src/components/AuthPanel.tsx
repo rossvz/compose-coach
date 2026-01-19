@@ -82,6 +82,12 @@ export default function AuthPanel() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
+            name="email"
+            id="email"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
             required
           />
         </label>
@@ -92,6 +98,11 @@ export default function AuthPanel() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="At least 6 characters"
+            name={mode === 'sign-in' ? 'current-password' : 'new-password'}
+            id="password"
+            autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+            autoCapitalize="none"
+            autoCorrect="off"
             minLength={6}
             required
           />

@@ -57,6 +57,11 @@ export default function ResetPassword() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="At least 6 characters"
+            name="new-password"
+            id="new-password"
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect="off"
             minLength={6}
             required
           />
@@ -68,6 +73,11 @@ export default function ResetPassword() {
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
             placeholder="Re-enter password"
+            name="confirm-password"
+            id="confirm-password"
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect="off"
             minLength={6}
             required
           />
