@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { getSupabase } from '../lib/supabaseClient'
+import '../App.css'
 
 export default function ResetPassword() {
   const navigate = useNavigate()

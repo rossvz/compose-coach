@@ -42,7 +42,10 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
 
   const handleSignOut = async () => {
     const supabase = getSupabase()
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      await supabase.auth.signOut({ scope: 'local' })
+    }
   }
 
   const handleSelectReview = (reviewIdValue: string) => {
