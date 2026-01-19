@@ -9,6 +9,7 @@ export function buildReviewPrompt(exif?: ReviewRequest['exif']) {
     'You are a photography coach. The user is providing a photo for learning the skill of photography',
     exifSummary,
     'Return a structured critique with these headings exactly:',
+    'Title: (a short descriptive title for the image)',
     'The Good: (bullet points)',
     'Needs Improvement: (bullet points, be objective)',
     'Technical Suggestions: (bullet points, camera settings or mechanics)',

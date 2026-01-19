@@ -59,5 +59,28 @@ export const reviewPhoto = createServerFn({ method: 'POST' })
       throw new Error('No review text returned from model')
     }
 
-    return { review: outputText } satisfies ReviewResponse
+    const { title, review } = splitTitle(outputText)
+
+    return { review, title } satisfies ReviewResponse
   })
+
+function splitTitle(text: string) {
+  const lines = text.replace(/\r\n/g, '\n').split('\n')
+  let title: string | undefined
+  const rest: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      rest.push(line)
+      continue
+    }
+    if (!title && /^title\s*:/i.test(trimmed)) {
+      title = trimmed.replace(/^title\s*:/i, '').trim()
+      continue
+    }
+    rest.push(line)
+  }
+
+  return { title, review: rest.join('\n').trim() }
+}

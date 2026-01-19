@@ -20,6 +20,7 @@ export type ReviewRequest = {
 
 export type ReviewResponse = {
   review: string
+  title?: string
 }
 
 export type ParsedReview = {

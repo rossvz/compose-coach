@@ -38,7 +38,7 @@ export function useReviewUpload(userId?: string) {
       const { data, error: fetchError } = await supabase
         .from('reviews')
         .select(
-          'id, created_at, review_text, model, photo:photos(id, storage_path, original_name, exif, created_at)',
+          'id, created_at, review_text, ai_title, model, photo:photos(id, storage_path, original_name, exif, created_at)',
         )
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -77,7 +77,7 @@ export function useReviewUpload(userId?: string) {
 
         mapped.push({
           id: row.id,
-          title: photo?.original_name || 'Uploaded photo',
+          title: row.ai_title || photo?.original_name || 'Uploaded photo',
           createdAt: new Date(row.created_at).toLocaleString(),
           previewUrl,
           exif: (photo?.exif as ReviewItem['exif']) ?? undefined,
@@ -201,6 +201,7 @@ export function useReviewUpload(userId?: string) {
           user_id: userId,
           photo_id: photoRow.id,
           review_text: result.review,
+          ai_title: result.title ?? null,
           model: 'openai',
         })
         .select('id, created_at')
@@ -219,6 +220,7 @@ export function useReviewUpload(userId?: string) {
           review.id === id
             ? {
                 ...review,
+                title: result.title || review.title,
                 feedback: result.review,
                 status: 'ready',
                 photoId: photoRow.id,

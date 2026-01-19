@@ -21,6 +21,7 @@ Notes:
 - `YOUR_PROJECT_REF` is the project ref from the Supabase dashboard URL.
 - If you can’t log in via browser, set `SUPABASE_ACCESS_TOKEN` env var and retry.
 - Re-run `npx supabase db push` whenever new migration files are added.
+  - New migration: `supabase/migrations/0003_review_title.sql`
 
 Alternatively, you can still paste `supabase/migrations/0001_init.sql` into the SQL editor.
 

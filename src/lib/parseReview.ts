@@ -19,6 +19,10 @@ export function parseReview(text: string): ParsedReview {
     if (!line) continue
 
     const heading = line.toLowerCase()
+    if (heading.startsWith('title')) {
+      current = null
+      continue
+    }
     if (heading.startsWith('the good')) {
       current = 'good'
       continue
