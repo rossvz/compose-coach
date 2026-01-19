@@ -53,26 +53,34 @@ function App() {
       />
       <main className="main">
         <div className="hero">
-          <h2>Photo feedback that is direct and usable.</h2>
-          <p>
-            Upload a photo and get one consolidated critique focused on composition, lighting,
-            focus, and tone.
-          </p>
+          {selectedReview ? (
+            <>
+              <h2>{selectedReview.title}</h2>
+              <p>{selectedReview.createdAt}</p>
+            </>
+          ) : (
+            <>
+              <h2>Upload a photo to get started.</h2>
+              <p>We’ll analyze composition, lighting, focus, and tone.</p>
+            </>
+          )}
         </div>
-        <UploadPanel
-          selectedReview={selectedReview}
-          onPickFile={handlePickFile}
-          onFileChange={handleFileChange}
-          error={error}
-        />
-        {loadingExisting ? (
-          <section className="review-panel">
-            <h3>Review</h3>
-            <p className="review-meta">Loading your saved reviews...</p>
-          </section>
-        ) : (
-          <ReviewPanel selectedReview={selectedReview} />
-        )}
+        <div className="content-panels">
+          <UploadPanel
+            selectedReview={selectedReview}
+            onPickFile={handlePickFile}
+            onFileChange={handleFileChange}
+            error={error}
+          />
+          {loadingExisting ? (
+            <section className="review-panel">
+              <h3>Review</h3>
+              <p className="review-meta">Loading your saved reviews...</p>
+            </section>
+          ) : (
+            <ReviewPanel selectedReview={selectedReview} />
+          )}
+        </div>
         <input
           ref={fileInputRef}
           type="file"

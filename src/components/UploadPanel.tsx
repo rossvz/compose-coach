@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import ExifList from './ExifList'
 import type { ReviewItem } from '../lib/types'
 
@@ -12,21 +13,37 @@ export default function UploadPanel({
   onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   error: string | null
 }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [isOpen])
+
   return (
     <section className="upload-panel">
       {selectedReview?.previewUrl ? (
         <>
-          <div className="status-pill">Current photo</div>
-          <div className="photo-preview">
+          <button
+            type="button"
+            className="photo-preview"
+            onClick={() => setIsOpen(true)}
+            aria-label="Open full screen preview"
+          >
             <img src={selectedReview.previewUrl} alt={selectedReview.title} />
-          </div>
+          </button>
           <div className="exif-panel">
             <h4>EXIF Details</h4>
             <ExifList exif={selectedReview.exif} />
           </div>
-          <button className="new-review" onClick={onPickFile}>
-            Upload another
-          </button>
         </>
       ) : (
         <>
@@ -38,6 +55,29 @@ export default function UploadPanel({
         </>
       )}
       {error && <div className="error">{error}</div>}
+      {isOpen && selectedReview?.previewUrl && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setIsOpen(false)}
+        >
+          <button
+            type="button"
+            className="modal-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Close preview"
+          >
+            Close
+          </button>
+          <img
+            className="modal-image"
+            src={selectedReview.previewUrl}
+            alt={selectedReview.title}
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
+      )}
     </section>
   )
 }
