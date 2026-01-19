@@ -342,6 +342,76 @@ export function useReviewUpload(
     await processFile(file)
   }
 
+  const deleteReview = async (review: ReviewItem) => {
+    if (!userId) {
+      setError('Sign in to delete reviews.')
+      return
+    }
+
+    if (!review.photoId || !review.storagePath) {
+      setError('Missing photo metadata for this review.')
+      return
+    }
+
+    setError(null)
+
+    try {
+      const supabase = getSupabase()
+
+      const { data: photoRow, error: photoFetchError } = await supabase
+        .from('photos')
+        .select('thumbnail_path')
+        .eq('id', review.photoId)
+        .eq('user_id', userId)
+        .single()
+
+      if (photoFetchError) {
+        throw photoFetchError
+      }
+
+      const removePaths = [review.storagePath]
+      if (photoRow?.thumbnail_path) {
+        removePaths.push(photoRow.thumbnail_path)
+      }
+
+      const { error: storageError } = await supabase.storage
+        .from('photos')
+        .remove(removePaths)
+      if (storageError) {
+        throw storageError
+      }
+
+      const reviewId = review.reviewId ?? review.id
+      const { error: reviewDeleteError } = await supabase
+        .from('reviews')
+        .delete()
+        .eq('id', reviewId)
+        .eq('user_id', userId)
+
+      if (reviewDeleteError) {
+        throw reviewDeleteError
+      }
+
+      const { error: photoDeleteError } = await supabase
+        .from('photos')
+        .delete()
+        .eq('id', review.photoId)
+        .eq('user_id', userId)
+
+      if (photoDeleteError) {
+        throw photoDeleteError
+      }
+
+      setReviews((prev) => prev.filter((item) => item.id !== review.id))
+      if (selectedId === reviewId) {
+        setSelectedId(null)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Delete failed'
+      setError(message)
+    }
+  }
+
   const regenerateReview = async (review: ReviewItem) => {
     if (!userId) {
       setError('Sign in to regenerate reviews.')
@@ -444,5 +514,6 @@ export function useReviewUpload(
     handleFileChange,
     handleDropFile,
     regenerateReview,
+    deleteReview,
   }
 }

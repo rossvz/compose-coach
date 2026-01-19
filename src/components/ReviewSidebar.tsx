@@ -9,6 +9,7 @@ export default function ReviewSidebar({
   userEmail,
   onSignOut,
   onDropFile,
+  onDeleteReview,
 }: {
   reviews: ReviewItem[]
   selectedId: string | null
@@ -17,6 +18,7 @@ export default function ReviewSidebar({
   userEmail?: string | null
   onSignOut?: () => void
   onDropFile: (file: File) => void
+  onDeleteReview: (review: ReviewItem) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
@@ -100,34 +102,46 @@ export default function ReviewSidebar({
           const reviewKey = review.reviewId ?? review.id
           const isActive = reviewKey === selectedId
           return (
-            <button
+            <div
               key={review.id}
               className={`review-card${isActive ? ' active' : ''}`}
-              onClick={() => onSelectReview(reviewKey)}
-              type="button"
             >
-              <div className="review-thumb">
-                {review.thumbnailUrl || review.previewUrl ? (
-                  <img
-                    src={review.thumbnailUrl ?? review.previewUrl}
-                    alt={review.title}
-                  />
-                ) : (
-                  'Preview'
-                )}
-              </div>
-              <div>
-                <div className="review-title">{review.title}</div>
-                <div className="review-meta">{review.createdAt}</div>
-                <div className="review-meta">
-                  {review.status === 'loading'
-                    ? 'Analyzing...'
-                    : review.status === 'error'
-                      ? 'Needs retry'
-                      : 'Ready'}
+              <button
+                className="review-card-main"
+                onClick={() => onSelectReview(reviewKey)}
+                type="button"
+              >
+                <div className="review-thumb">
+                  {review.thumbnailUrl || review.previewUrl ? (
+                    <img
+                      src={review.thumbnailUrl ?? review.previewUrl}
+                      alt={review.title}
+                    />
+                  ) : (
+                    'Preview'
+                  )}
                 </div>
-              </div>
-            </button>
+                <div>
+                  <div className="review-title">{review.title}</div>
+                  <div className="review-meta">{review.createdAt}</div>
+                  <div className="review-meta">
+                    {review.status === 'loading'
+                      ? 'Analyzing...'
+                      : review.status === 'error'
+                        ? 'Needs retry'
+                        : 'Ready'}
+                  </div>
+                </div>
+              </button>
+              <button
+                className="review-delete"
+                type="button"
+                onClick={() => onDeleteReview(review)}
+                aria-label={`Delete ${review.title}`}
+              >
+                ✕
+              </button>
+            </div>
           )
         })}
       </div>

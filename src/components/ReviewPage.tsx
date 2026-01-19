@@ -25,6 +25,7 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
     handleFileChange,
     handleDropFile,
     regenerateReview,
+    deleteReview,
   } = useReviewUpload(user?.id, {
     onReviewCreated: (newReviewId) => {
       navigate({ to: '/reviews/$reviewId', params: { reviewId: newReviewId } })
@@ -81,6 +82,7 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
         onSelectReview={handleSelectReview}
         onNewReview={handlePickFile}
         onDropFile={handleDropFile}
+        onDeleteReview={deleteReview}
         userEmail={user.email}
         onSignOut={handleSignOut}
       />

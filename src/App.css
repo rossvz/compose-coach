@@ -107,14 +107,13 @@
 
 .review-card {
   border: 1px solid transparent;
-  padding: 12px;
+  padding: 8px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.6);
   display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
   align-items: center;
-  cursor: pointer;
   transition: border 0.2s ease, transform 0.2s ease;
 }
 
@@ -126,6 +125,26 @@
 .review-card.active {
   border-color: var(--accent);
   background: white;
+}
+
+.review-card-main {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.review-delete {
+  border: none;
+  background: rgba(30, 27, 22, 0.08);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
 }
 
 .review-thumb {
