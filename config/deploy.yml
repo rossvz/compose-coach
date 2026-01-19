@@ -8,7 +8,7 @@ servers:
 
 proxy:
   ssl: true
-  host: compose-coach.rosscodes.com
+  host: compose.rosscodes.com
   app_port: 5000
 
 registry:

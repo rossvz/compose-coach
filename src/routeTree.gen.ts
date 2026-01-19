@@ -9,9 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UpRouteImport } from './routes/up'
+import { Route as HealthRouteImport } from './routes/health'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReviewsReviewIdRouteImport } from './routes/reviews/$reviewId'
 
+const UpRoute = UpRouteImport.update({
+  id: '/up',
+  path: '/up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HealthRoute = HealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -25,32 +37,54 @@ const ReviewsReviewIdRoute = ReviewsReviewIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
+  '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
+  '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/health': typeof HealthRoute
+  '/up': typeof UpRoute
   '/reviews/$reviewId': typeof ReviewsReviewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/reviews/$reviewId'
+  fullPaths: '/' | '/health' | '/up' | '/reviews/$reviewId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/reviews/$reviewId'
-  id: '__root__' | '/' | '/reviews/$reviewId'
+  to: '/' | '/health' | '/up' | '/reviews/$reviewId'
+  id: '__root__' | '/' | '/health' | '/up' | '/reviews/$reviewId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HealthRoute: typeof HealthRoute
+  UpRoute: typeof UpRoute
   ReviewsReviewIdRoute: typeof ReviewsReviewIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/up': {
+      id: '/up'
+      path: '/up'
+      fullPath: '/up'
+      preLoaderRoute: typeof UpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/health': {
+      id: '/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof HealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -70,6 +104,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HealthRoute: HealthRoute,
+  UpRoute: UpRoute,
   ReviewsReviewIdRoute: ReviewsReviewIdRoute,
 }
 export const routeTree = rootRouteImport
