@@ -54,7 +54,8 @@ Compose Coach is a single‑upload photo review app. Users authenticate with a m
 
 ## AI Prompting Contract
 - One response per upload.
-- Sections: Composition, Lighting, Focus/Sharpness, Color/Tone, Suggestions.
+- Sections: The Good, Needs Improvement, Technical Suggestions, Artistic Suggestions, Overall Score.
+- Use EXIF metadata (if available) to inform technical advice.
 - Must avoid unsafe content; handle low‑quality images gracefully.
 
 ## UI Notes
@@ -93,4 +94,5 @@ Compose Coach is a single‑upload photo review app. Users authenticate with a m
 - Auth omitted for now.
 - Reviews are stored in client memory only.
 - Images are sent directly to the vision model; no persistent storage yet.
+- Client parses EXIF data and sends it with the image to the model.
 - Supabase integration will be added alongside auth + storage.

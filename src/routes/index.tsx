@@ -7,6 +7,20 @@ type ReviewRequest = {
   imageBase64: string
   mimeType: string
   fileName: string
+  exif?: {
+    cameraMake?: string
+    cameraModel?: string
+    lensModel?: string
+    focalLengthMm?: number
+    focalLength35mm?: number
+    aperture?: number
+    shutterSpeed?: string
+    iso?: number
+    exposureCompensation?: number
+    whiteBalance?: string
+    flash?: string
+    takenAt?: string
+  }
 }
 
 type ReviewResponse = {
@@ -16,6 +30,7 @@ type ReviewResponse = {
 type ParsedReview = {
   good: string[]
   needsImprovement: string[]
+  technical: string[]
   artistic: string[]
   score: string | null
 }
@@ -24,6 +39,7 @@ function parseReview(text: string): ParsedReview {
   const sections: ParsedReview = {
     good: [],
     needsImprovement: [],
+    technical: [],
     artistic: [],
     score: null,
   }
@@ -49,6 +65,10 @@ function parseReview(text: string): ParsedReview {
       current = 'artistic'
       continue
     }
+    if (heading.startsWith('technical suggestions')) {
+      current = 'technical'
+      continue
+    }
     if (heading.startsWith('overall score')) {
       const scoreMatch = line.match(/(\d+(?:\.\d+)?\s*\/\s*10)/i)
       sections.score =
@@ -64,6 +84,7 @@ function parseReview(text: string): ParsedReview {
       if (cleaned) {
         if (current === 'good') sections.good.push(cleaned)
         if (current === 'needsImprovement') sections.needsImprovement.push(cleaned)
+        if (current === 'technical') sections.technical.push(cleaned)
         if (current === 'artistic') sections.artistic.push(cleaned)
       }
     }
@@ -86,10 +107,17 @@ const reviewPhoto = createServerFn({ method: 'POST' })
       throw new Error(`Image exceeds ${maxMb}MB limit`)
     }
 
+    const exifSummary = data.exif
+      ? `EXIF metadata: ${JSON.stringify(data.exif)}`
+      : 'EXIF metadata: none provided.'
+
     const prompt = [
-      'You are a photography coach. Return a structured critique with these headings exactly:',
+      'You are a photography coach.',
+      exifSummary,
+      'Return a structured critique with these headings exactly:',
       'The Good: (bullet points)',
       'Needs Improvement: (bullet points, be objective)',
+      'Technical Suggestions: (bullet points, camera settings or mechanics)',
       'Artistic Suggestions: (bullet points, more creative/subjective)',
       'Overall Score: x/10 (single line)',
       'Be positive but not flattering. Be direct and specific about weaknesses. Avoid simply describing the photo.',
@@ -179,6 +207,7 @@ function App() {
     }
 
     const dataUrl = await fileToDataUrl(file)
+    const exif = await extractExifSummary(file)
     const [meta, base64] = dataUrl.split(',')
     if (!base64) {
       setError('Could not read image data.')
@@ -206,7 +235,12 @@ function App() {
 
     try {
       const result = await reviewPhoto({
-        data: { imageBase64: base64, mimeType, fileName: file.name },
+        data: {
+          imageBase64: base64,
+          mimeType,
+          fileName: file.name,
+          exif,
+        },
       })
 
       setReviews((prev) =>
@@ -359,6 +393,18 @@ function StructuredReview({ review }: { review: string }) {
         )}
       </section>
       <section>
+        <h4>Technical Suggestions</h4>
+        {parsed.technical.length > 0 ? (
+          <ul>
+            {parsed.technical.map((item, index) => (
+              <li key={`tech-${index}`}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="review-meta">No technical suggestions extracted.</p>
+        )}
+      </section>
+      <section>
         <h4>Artistic Suggestions</h4>
         {parsed.artistic.length > 0 ? (
           <ul>
@@ -376,6 +422,91 @@ function StructuredReview({ review }: { review: string }) {
       </section>
     </div>
   )
+}
+
+async function extractExifSummary(
+  file: File,
+): Promise<ReviewRequest['exif'] | undefined> {
+  try {
+    const exifr = await import('exifr')
+    const data = await exifr.parse(file)
+    if (!data) return undefined
+
+    const exposureTime = data.ExposureTime ?? data.exposureTime
+    let shutterSpeed: string | undefined
+    if (typeof exposureTime === 'number') {
+      shutterSpeed =
+        exposureTime >= 1
+          ? `${exposureTime.toFixed(2)}s`
+          : `1/${Math.round(1 / exposureTime)}s`
+    } else if (typeof exposureTime === 'string') {
+      shutterSpeed = exposureTime
+    }
+
+    const aperture =
+      typeof data.FNumber === 'number'
+        ? Number(data.FNumber.toFixed(1))
+        : typeof data.ApertureValue === 'number'
+          ? Number(data.ApertureValue.toFixed(1))
+          : undefined
+
+    const whiteBalance =
+      data.WhiteBalance === 0
+        ? 'Auto'
+        : data.WhiteBalance === 1
+          ? 'Manual'
+          : undefined
+
+    const flash =
+      data.Flash === 0
+        ? 'No flash'
+        : typeof data.Flash === 'number'
+          ? 'Flash fired'
+          : undefined
+
+    const takenAt =
+      data.DateTimeOriginal instanceof Date
+        ? data.DateTimeOriginal.toISOString()
+        : undefined
+
+    const summary = {
+      cameraMake: data.Make || data.make,
+      cameraModel: data.Model || data.model,
+      lensModel: data.LensModel || data.lensModel,
+      focalLengthMm:
+        typeof data.FocalLength === 'number'
+          ? Number(data.FocalLength.toFixed(1))
+          : undefined,
+      focalLength35mm:
+        typeof data.FocalLengthIn35mmFilm === 'number'
+          ? Number(data.FocalLengthIn35mmFilm.toFixed(1))
+          : undefined,
+      aperture,
+      shutterSpeed,
+      iso:
+        typeof data.ISO === 'number'
+          ? data.ISO
+          : typeof data.PhotographicSensitivity === 'number'
+            ? data.PhotographicSensitivity
+            : undefined,
+      exposureCompensation:
+        typeof data.ExposureCompensation === 'number'
+          ? Number(data.ExposureCompensation.toFixed(2))
+          : undefined,
+      whiteBalance,
+      flash,
+      takenAt,
+    }
+
+    const hasValues = Object.values(summary).some(
+      (value) => value !== undefined && value !== null && value !== '',
+    )
+
+    return hasValues ? summary : undefined
+  } catch (error) {
+    console.warn('EXIF parse failed', error)
+    return undefined
+  }
 }
 
 function fileToDataUrl(file: File) {
