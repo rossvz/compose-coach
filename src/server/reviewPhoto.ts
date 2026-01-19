@@ -43,8 +43,18 @@ export const reviewPhoto = createServerFn({ method: 'POST' })
     })
 
     if (!response.ok) {
-      const message = await response.text()
-      throw new Error(message || 'OpenAI request failed')
+      let message = 'OpenAI request failed'
+      try {
+        const errorPayload = await response.json()
+        message =
+          errorPayload?.error?.message ||
+          errorPayload?.message ||
+          JSON.stringify(errorPayload)
+      } catch (error) {
+        const text = await response.text().catch(() => '')
+        if (text) message = text
+      }
+      throw new Error(message)
     }
 
     const payload = await response.json()

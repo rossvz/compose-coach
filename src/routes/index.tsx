@@ -11,6 +11,7 @@ import { supabase } from '../lib/supabaseClient'
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const acceptTypes = 'image/jpeg,image/png,image/gif,image/webp'
   const { user, loading } = useSupabaseAuth()
   const {
     reviews,
@@ -66,13 +67,14 @@ function App() {
           )}
         </div>
         <div className="content-panels">
-          <UploadPanel
-            selectedReview={selectedReview}
-            onPickFile={handlePickFile}
-            onFileChange={handleFileChange}
-            error={error}
-          />
-          {loadingExisting ? (
+        <UploadPanel
+          selectedReview={selectedReview}
+          onPickFile={handlePickFile}
+          onFileChange={handleFileChange}
+          error={error}
+          acceptTypes={acceptTypes}
+        />
+        {loadingExisting ? (
             <section className="review-panel">
               <h3>Review</h3>
               <p className="review-meta">Loading your saved reviews...</p>
@@ -84,7 +86,7 @@ function App() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={acceptTypes}
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />

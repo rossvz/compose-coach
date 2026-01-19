@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabaseClient'
 
 const REVIEWS_LIMIT = 20
 const SIGNED_URL_TTL = 60 * 60
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
 export function useReviewUpload(userId?: string) {
   const [reviews, setReviews] = useState<ReviewItem[]>([])
@@ -114,6 +115,12 @@ export function useReviewUpload(userId?: string) {
 
     if (!userId) {
       setError('Sign in to upload photos.')
+      event.target.value = ''
+      return
+    }
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setError('Please upload a JPG, PNG, GIF, or WEBP image.')
       event.target.value = ''
       return
     }
