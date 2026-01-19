@@ -289,6 +289,18 @@
   margin: 0;
 }
 
+.review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.link-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .review-output {
   white-space: pre-wrap;
   line-height: 1.6;

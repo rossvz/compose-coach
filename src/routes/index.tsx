@@ -24,6 +24,7 @@ function App() {
     handlePickFile,
     handleFileChange,
     handleDropFile,
+    regenerateReview,
   } = useReviewUpload(user?.id)
 
   const handleSignOut = async () => {
@@ -82,8 +83,11 @@ function App() {
               <p className="review-meta">Loading your saved reviews...</p>
             </section>
           ) : (
-            <ReviewPanel selectedReview={selectedReview} />
-          )}
+          <ReviewPanel
+            selectedReview={selectedReview}
+            onRegenerate={regenerateReview}
+          />
+        )}
         </div>
         <input
           ref={fileInputRef}

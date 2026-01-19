@@ -3,12 +3,26 @@ import type { ReviewItem } from '../lib/types'
 
 export default function ReviewPanel({
   selectedReview,
+  onRegenerate,
 }: {
   selectedReview: ReviewItem | null
+  onRegenerate: (review: ReviewItem) => void
 }) {
   return (
     <section className="review-panel">
-      <h3>Review</h3>
+      <div className="review-header">
+        <h3>Review</h3>
+        {selectedReview && (
+          <button
+            className="link-button"
+            type="button"
+            onClick={() => onRegenerate(selectedReview)}
+            disabled={selectedReview.status === 'loading'}
+          >
+            Regenerate review
+          </button>
+        )}
+      </div>
       {!selectedReview && (
         <p className="review-meta">Your critique will appear here after an upload.</p>
       )}

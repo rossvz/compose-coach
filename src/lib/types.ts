@@ -37,6 +37,7 @@ export type ReviewItem = {
   createdAt: string
   previewUrl: string
   exif?: ReviewRequest['exif']
+  mimeType?: string
   photoId?: string
   storagePath?: string
   reviewId?: string

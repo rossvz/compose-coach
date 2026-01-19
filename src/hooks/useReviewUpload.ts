@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReviewItem } from '../lib/types'
 import { extractExifSummary } from '../lib/exif'
-import { fileToDataUrl } from '../lib/file'
+import { blobToBase64, fileToDataUrl } from '../lib/file'
 import { getImageDimensions } from '../lib/image'
 import { reviewPhoto } from '../server/reviewPhoto'
 import { supabase } from '../lib/supabaseClient'
@@ -39,7 +39,7 @@ export function useReviewUpload(userId?: string) {
       const { data, error: fetchError } = await supabase
         .from('reviews')
         .select(
-          'id, created_at, review_text, ai_title, model, photo:photos(id, storage_path, original_name, exif, created_at)',
+          'id, created_at, review_text, ai_title, model, photo:photos(id, storage_path, original_name, mime_type, exif, created_at)',
         )
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -61,6 +61,7 @@ export function useReviewUpload(userId?: string) {
           id: string
           storage_path: string
           original_name: string | null
+          mime_type: string | null
           exif: Record<string, unknown> | null
           created_at: string
         } | null
@@ -82,6 +83,7 @@ export function useReviewUpload(userId?: string) {
           createdAt: new Date(row.created_at).toLocaleString(),
           previewUrl,
           exif: (photo?.exif as ReviewItem['exif']) ?? undefined,
+          mimeType: photo?.mime_type ?? undefined,
           feedback: row.review_text,
           status: 'ready',
           photoId: photo?.id,
@@ -144,6 +146,7 @@ export function useReviewUpload(userId?: string) {
       createdAt: new Date().toLocaleString(),
       previewUrl: dataUrl,
       exif,
+      mimeType,
       feedback: '',
       status: 'loading',
     }
@@ -264,6 +267,95 @@ export function useReviewUpload(userId?: string) {
     await processFile(file)
   }
 
+  const regenerateReview = async (review: ReviewItem) => {
+    if (!userId) {
+      setError('Sign in to regenerate reviews.')
+      return
+    }
+
+    if (!review.storagePath) {
+      setError('Missing original photo for this review.')
+      return
+    }
+
+    setError(null)
+    setReviews((prev) =>
+      prev.map((item) =>
+        item.id === review.id
+          ? { ...item, status: 'loading', error: undefined }
+          : item,
+      ),
+    )
+
+    try {
+      const { data: signed, error: signedError } = await supabase.storage
+        .from('photos')
+        .createSignedUrl(review.storagePath, SIGNED_URL_TTL)
+
+      if (signedError || !signed?.signedUrl) {
+        throw signedError ?? new Error('Could not access stored photo.')
+      }
+
+      const response = await fetch(signed.signedUrl)
+      if (!response.ok) {
+        throw new Error('Failed to download stored photo.')
+      }
+      const blob = await response.blob()
+      const mimeType = review.mimeType || blob.type || 'image/jpeg'
+      const base64 = await blobToBase64(blob)
+
+      const result = await reviewPhoto({
+        data: {
+          imageBase64: base64,
+          mimeType,
+          fileName: review.title,
+          exif: review.exif,
+        },
+      })
+
+      const reviewId = review.reviewId ?? review.id
+      const { error: updateError } = await supabase
+        .from('reviews')
+        .update({
+          review_text: result.review,
+          ai_title: result.title ?? null,
+        })
+        .eq('id', reviewId)
+        .eq('user_id', userId)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      setReviews((prev) =>
+        prev.map((item) =>
+          item.id === review.id
+            ? {
+                ...item,
+                title: result.title || item.title,
+                feedback: result.review,
+                status: 'ready',
+              }
+            : item,
+        ),
+      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      setReviews((prev) =>
+        prev.map((item) =>
+          item.id === review.id
+            ? {
+                ...item,
+                status: 'error',
+                error: message,
+              }
+            : item,
+        ),
+      )
+      setError(message)
+    }
+  }
+
   return {
     reviews,
     selectedReview,
@@ -275,5 +367,6 @@ export function useReviewUpload(userId?: string) {
     handlePickFile,
     handleFileChange,
     handleDropFile,
+    regenerateReview,
   }
 }
