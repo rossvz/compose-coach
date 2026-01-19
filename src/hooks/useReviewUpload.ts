@@ -1,20 +1,105 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReviewItem } from '../lib/types'
 import { extractExifSummary } from '../lib/exif'
 import { fileToDataUrl } from '../lib/file'
+import { getImageDimensions } from '../lib/image'
 import { reviewPhoto } from '../server/reviewPhoto'
 import { supabase } from '../lib/supabaseClient'
+
+const REVIEWS_LIMIT = 20
+const SIGNED_URL_TTL = 60 * 60
 
 export function useReviewUpload(userId?: string) {
   const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [loadingExisting, setLoadingExisting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectedReview = useMemo(
     () => reviews.find((review) => review.id === selectedId) ?? reviews[0] ?? null,
     [reviews, selectedId],
   )
+
+  useEffect(() => {
+    if (!userId) {
+      setReviews([])
+      setSelectedId(null)
+      setError(null)
+      setLoadingExisting(false)
+      return
+    }
+
+    let active = true
+
+    const loadExisting = async () => {
+      setLoadingExisting(true)
+      setError(null)
+      const { data, error: fetchError } = await supabase
+        .from('reviews')
+        .select(
+          'id, created_at, review_text, model, photo:photos(id, storage_path, original_name, exif, created_at)',
+        )
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(REVIEWS_LIMIT)
+
+      if (!active) return
+
+      if (fetchError) {
+        console.error('Failed to load reviews', fetchError)
+        setError(fetchError.message)
+        setLoadingExisting(false)
+        return
+      }
+
+      const mapped: ReviewItem[] = []
+
+      for (const row of data ?? []) {
+        const photo = row.photo as {
+          id: string
+          storage_path: string
+          original_name: string | null
+          exif: Record<string, unknown> | null
+          created_at: string
+        } | null
+
+        let previewUrl = ''
+        if (photo?.storage_path) {
+          const { data: signed, error: signedError } = await supabase.storage
+            .from('photos')
+            .createSignedUrl(photo.storage_path, SIGNED_URL_TTL)
+          if (signedError) {
+            console.warn('Failed to sign photo URL', signedError)
+          }
+          previewUrl = signed?.signedUrl ?? ''
+        }
+
+        mapped.push({
+          id: row.id,
+          title: photo?.original_name || 'Uploaded photo',
+          createdAt: new Date(row.created_at).toLocaleString(),
+          previewUrl,
+          exif: (photo?.exif as ReviewItem['exif']) ?? undefined,
+          feedback: row.review_text,
+          status: 'ready',
+          photoId: photo?.id,
+          storagePath: photo?.storage_path,
+          reviewId: row.id,
+        })
+      }
+
+      setReviews(mapped)
+      setSelectedId((current) => current ?? mapped[0]?.id ?? null)
+      setLoadingExisting(false)
+    }
+
+    loadExisting()
+
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   const handlePickFile = () => {
     setError(null)
@@ -48,6 +133,7 @@ export function useReviewUpload(userId?: string) {
     }
     const mimeType = meta?.match(/data:(.*);base64/)?.[1] ?? file.type
     const exif = await extractExifSummary(file)
+    const { width, height } = await getImageDimensions(file)
 
     const id =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -88,6 +174,9 @@ export function useReviewUpload(userId?: string) {
           storage_path: storagePath,
           mime_type: file.type,
           original_name: file.name,
+          file_size: file.size,
+          width,
+          height,
           exif,
         })
         .select('id')
@@ -114,12 +203,16 @@ export function useReviewUpload(userId?: string) {
           review_text: result.review,
           model: 'openai',
         })
-        .select('id')
+        .select('id, created_at')
         .single()
 
       if (reviewError) {
         throw reviewError
       }
+
+      const { data: signed } = await supabase.storage
+        .from('photos')
+        .createSignedUrl(storagePath, SIGNED_URL_TTL)
 
       setReviews((prev) =>
         prev.map((review) =>
@@ -131,6 +224,10 @@ export function useReviewUpload(userId?: string) {
                 photoId: photoRow.id,
                 reviewId: reviewRow.id,
                 storagePath,
+                createdAt: reviewRow.created_at
+                  ? new Date(reviewRow.created_at).toLocaleString()
+                  : review.createdAt,
+                previewUrl: signed?.signedUrl ?? review.previewUrl,
               }
             : review,
         ),
@@ -160,6 +257,7 @@ export function useReviewUpload(userId?: string) {
     selectedReview,
     selectedId,
     error,
+    loadingExisting,
     fileInputRef,
     setSelectedId,
     handlePickFile,

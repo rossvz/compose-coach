@@ -17,6 +17,7 @@ function App() {
     selectedReview,
     selectedId,
     error,
+    loadingExisting,
     fileInputRef,
     setSelectedId,
     handlePickFile,
@@ -64,7 +65,14 @@ function App() {
           onFileChange={handleFileChange}
           error={error}
         />
-        <ReviewPanel selectedReview={selectedReview} />
+        {loadingExisting ? (
+          <section className="review-panel">
+            <h3>Review</h3>
+            <p className="review-meta">Loading your saved reviews...</p>
+          </section>
+        ) : (
+          <ReviewPanel selectedReview={selectedReview} />
+        )}
         <input
           ref={fileInputRef}
           type="file"
