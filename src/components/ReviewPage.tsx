@@ -25,7 +25,11 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
     handleFileChange,
     handleDropFile,
     regenerateReview,
-  } = useReviewUpload(user?.id)
+  } = useReviewUpload(user?.id, {
+    onReviewCreated: (newReviewId) => {
+      navigate({ to: '/reviews/$reviewId', params: { reviewId: newReviewId } })
+    },
+  })
 
   useEffect(() => {
     if (!reviewId) return
@@ -36,7 +40,10 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
 
   useEffect(() => {
     if (!reviewId && selectedReview?.reviewId) {
-      navigate({ to: '/reviews/$reviewId', params: { reviewId: selectedReview.reviewId } })
+      navigate({
+        to: '/reviews/$reviewId',
+        params: { reviewId: selectedReview.reviewId },
+      })
     }
   }, [reviewId, selectedReview?.reviewId, navigate])
 
@@ -79,6 +86,17 @@ export default function ReviewPage({ reviewId }: { reviewId?: string }) {
       />
       <main className="main">
         <div className="hero">
+          <div className="mobile-header">
+            <button
+              className="icon-button"
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-sidebar'))}
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+            <div className="mobile-brand">Compose Coach</div>
+          </div>
           {loadingExisting && !selectedReview ? (
             <>
               <h2>Loading review...</h2>

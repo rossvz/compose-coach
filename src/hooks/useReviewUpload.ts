@@ -10,7 +10,10 @@ const REVIEWS_LIMIT = 20
 const SIGNED_URL_TTL = 60 * 60
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
-export function useReviewUpload(userId?: string) {
+export function useReviewUpload(
+  userId?: string,
+  options?: { onReviewCreated?: (reviewId: string) => void },
+) {
   const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -192,6 +195,38 @@ export function useReviewUpload(userId?: string) {
         throw photoError
       }
 
+      const { data: reviewRow, error: reviewError } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: userId,
+          photo_id: photoRow.id,
+          review_text: 'Generating review...',
+          ai_title: null,
+          model: 'openai',
+        })
+        .select('id, created_at')
+        .single()
+
+      if (reviewError) {
+        throw reviewError
+      }
+
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === id
+            ? {
+                ...review,
+                reviewId: reviewRow.id,
+                createdAt: reviewRow.created_at
+                  ? new Date(reviewRow.created_at).toLocaleString()
+                  : review.createdAt,
+              }
+            : review,
+        ),
+      )
+      setSelectedId(reviewRow.id)
+      options?.onReviewCreated?.(reviewRow.id)
+
       const result = await reviewPhoto({
         data: {
           imageBase64: base64,
@@ -201,20 +236,17 @@ export function useReviewUpload(userId?: string) {
         },
       })
 
-      const { data: reviewRow, error: reviewError } = await supabase
+      const { error: reviewUpdateError } = await supabase
         .from('reviews')
-        .insert({
-          user_id: userId,
-          photo_id: photoRow.id,
+        .update({
           review_text: result.review,
           ai_title: result.title ?? null,
-          model: 'openai',
         })
-        .select('id, created_at')
-        .single()
+        .eq('id', reviewRow.id)
+        .eq('user_id', userId)
 
-      if (reviewError) {
-        throw reviewError
+      if (reviewUpdateError) {
+        throw reviewUpdateError
       }
 
       const { data: signed } = await supabase.storage
@@ -232,15 +264,11 @@ export function useReviewUpload(userId?: string) {
                 photoId: photoRow.id,
                 reviewId: reviewRow.id,
                 storagePath,
-                createdAt: reviewRow.created_at
-                  ? new Date(reviewRow.created_at).toLocaleString()
-                  : review.createdAt,
                 previewUrl: signed?.signedUrl ?? review.previewUrl,
               }
             : review,
         ),
       )
-      setSelectedId(reviewRow.id)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong'
       setReviews((prev) =>

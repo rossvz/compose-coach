@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReviewItem } from '../lib/types'
 
 export default function ReviewSidebar({
@@ -19,6 +19,7 @@ export default function ReviewSidebar({
   onDropFile: (file: File) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
+  const [isOpen, setIsOpen] = useState(false)
   const selectedReview =
     reviews.find((review) => review.reviewId === selectedId) ??
     reviews.find((review) => review.id === selectedId) ??
@@ -42,8 +43,28 @@ export default function ReviewSidebar({
     }
   }
 
+  useEffect(() => {
+    const handler = () => setIsOpen((prev) => !prev)
+    window.addEventListener('toggle-sidebar', handler)
+    return () => window.removeEventListener('toggle-sidebar', handler)
+  }, [])
+
+  useEffect(() => {
+    if (selectedId) {
+      setIsOpen(false)
+    }
+  }, [selectedId])
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? ' sidebar-open' : ''}`}>
+      <button
+        type="button"
+        className="sidebar-close"
+        onClick={() => setIsOpen(false)}
+        aria-label="Close menu"
+      >
+        ✕
+      </button>
       <div className="brand">
         <h1>Compose Coach</h1>
         <p>Single-shot critiques for smarter photos.</p>
