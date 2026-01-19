@@ -3,8 +3,9 @@ import type { ReviewItem } from '../lib/types'
 import { extractExifSummary } from '../lib/exif'
 import { fileToDataUrl } from '../lib/file'
 import { reviewPhoto } from '../server/reviewPhoto'
+import { supabase } from '../lib/supabaseClient'
 
-export function useReviewUpload() {
+export function useReviewUpload(userId?: string) {
   const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +26,12 @@ export function useReviewUpload() {
   ) => {
     const file = event.target.files?.[0]
     if (!file) return
+
+    if (!userId) {
+      setError('Sign in to upload photos.')
+      event.target.value = ''
+      return
+    }
 
     if (file.size > 8 * 1024 * 1024) {
       setError('Please upload an image under 8MB.')
@@ -62,6 +69,34 @@ export function useReviewUpload() {
     setError(null)
 
     try {
+      const safeName = (file.name || 'photo').replace(/[^\w.-]+/g, '-')
+      const storagePath = `${userId}/${id}-${safeName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(storagePath, file, { contentType: file.type })
+
+      if (uploadError) {
+        throw uploadError
+      }
+
+      const { data: photoRow, error: photoError } = await supabase
+        .from('photos')
+        .insert({
+          user_id: userId,
+          storage_bucket: 'photos',
+          storage_path: storagePath,
+          mime_type: file.type,
+          original_name: file.name,
+          exif,
+        })
+        .select('id')
+        .single()
+
+      if (photoError) {
+        throw photoError
+      }
+
       const result = await reviewPhoto({
         data: {
           imageBase64: base64,
@@ -71,6 +106,21 @@ export function useReviewUpload() {
         },
       })
 
+      const { data: reviewRow, error: reviewError } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: userId,
+          photo_id: photoRow.id,
+          review_text: result.review,
+          model: 'openai',
+        })
+        .select('id')
+        .single()
+
+      if (reviewError) {
+        throw reviewError
+      }
+
       setReviews((prev) =>
         prev.map((review) =>
           review.id === id
@@ -78,6 +128,9 @@ export function useReviewUpload() {
                 ...review,
                 feedback: result.review,
                 status: 'ready',
+                photoId: photoRow.id,
+                reviewId: reviewRow.id,
+                storagePath,
               }
             : review,
         ),

@@ -12,7 +12,8 @@ export function parseReview(text: string): ParsedReview {
   const normalized = text.replace(/\r\n/g, '\n')
   const lines = normalized.split('\n').map((line) => line.trim())
 
-  let current: keyof ParsedReview | null = null
+  type SectionKey = 'good' | 'needsImprovement' | 'technical' | 'artistic'
+  let current: SectionKey | null = null
 
   for (const line of lines) {
     if (!line) continue
@@ -44,7 +45,7 @@ export function parseReview(text: string): ParsedReview {
       continue
     }
 
-    if (current && current !== 'score') {
+    if (current) {
       const cleaned = line.replace(/^[-•*]\s*/, '')
       if (cleaned) {
         if (current === 'good') sections.good.push(cleaned)

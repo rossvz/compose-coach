@@ -91,8 +91,12 @@ Compose Coach is a single‑upload photo review app. Users authenticate with a m
 - Mobile native clients.
 
 ## Vertical Slice Notes (current)
-- Auth omitted for now.
-- Reviews are stored in client memory only.
-- Images are sent directly to the vision model; no persistent storage yet.
+- Supabase auth (email/password) is in place for sign-in/sign-up.
+- Reviews are stored in client memory for rendering, then persisted to Postgres.
+- Images are uploaded to Supabase Storage and also sent to the vision model.
 - Client parses EXIF data and sends it with the image to the model.
-- Supabase integration will be added alongside auth + storage.
+ 
+## Backend Progress (in progress)
+- Supabase auth (email/password) added in-app.
+- Photos and reviews tables + storage bucket policies defined under `supabase/migrations/`.
+- Upload flow now writes to Supabase Storage + Postgres before saving AI feedback.

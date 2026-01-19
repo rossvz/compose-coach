@@ -3,11 +3,15 @@ import '../App.css'
 import ReviewSidebar from '../components/ReviewSidebar'
 import UploadPanel from '../components/UploadPanel'
 import ReviewPanel from '../components/ReviewPanel'
+import AuthPanel from '../components/AuthPanel'
 import { useReviewUpload } from '../hooks/useReviewUpload'
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { supabase } from '../lib/supabaseClient'
 
 export const Route = createFileRoute('/')({ component: App })
 
 function App() {
+  const { user, loading } = useSupabaseAuth()
   const {
     reviews,
     selectedReview,
@@ -17,7 +21,24 @@ function App() {
     setSelectedId,
     handlePickFile,
     handleFileChange,
-  } = useReviewUpload()
+  } = useReviewUpload(user?.id)
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+  }
+
+  if (loading) {
+    return (
+      <div className="auth-panel">
+        <h2>Loading</h2>
+        <p className="review-meta">Checking your session...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthPanel />
+  }
 
   return (
     <div className="app-shell">
@@ -26,6 +47,8 @@ function App() {
         selectedId={selectedId}
         onSelect={setSelectedId}
         onNewReview={handlePickFile}
+        userEmail={user.email}
+        onSignOut={handleSignOut}
       />
       <main className="main">
         <div className="hero">

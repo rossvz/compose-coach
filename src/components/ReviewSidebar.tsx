@@ -5,11 +5,15 @@ export default function ReviewSidebar({
   selectedId,
   onSelect,
   onNewReview,
+  userEmail,
+  onSignOut,
 }: {
   reviews: ReviewItem[]
   selectedId: string | null
   onSelect: (id: string) => void
   onNewReview: () => void
+  userEmail?: string | null
+  onSignOut?: () => void
 }) {
   const selectedReview = reviews.find((review) => review.id === selectedId) ?? reviews[0]
 
@@ -22,6 +26,17 @@ export default function ReviewSidebar({
       <button className="new-review" onClick={onNewReview}>
         New review
       </button>
+      {userEmail && (
+        <div className="user-block">
+          <div className="review-meta">Signed in as</div>
+          <div className="user-email">{userEmail}</div>
+          {onSignOut && (
+            <button className="link-button" type="button" onClick={onSignOut}>
+              Sign out
+            </button>
+          )}
+        </div>
+      )}
       <div className="review-list">
         {reviews.length === 0 && (
           <div className="review-meta">No reviews yet.</div>

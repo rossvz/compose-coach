@@ -36,6 +36,9 @@ export type ReviewItem = {
   createdAt: string
   previewUrl: string
   exif?: ReviewRequest['exif']
+  photoId?: string
+  storagePath?: string
+  reviewId?: string
   feedback: string
   status: 'ready' | 'loading' | 'error'
   error?: string
